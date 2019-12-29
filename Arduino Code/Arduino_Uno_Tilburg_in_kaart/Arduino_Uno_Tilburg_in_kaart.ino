@@ -7,39 +7,19 @@
 //Tilburg in kaart.
 //Hardware: Arduino Uno, Adafruit_NeoPixel strip.
 
-
-//Sketch uses 6450 bytes (19%) of program storage space. Maximum is 32256 bytes.
-//Global variables use 452 bytes (22%) of dynamic memory, leaving 1596 bytes for local variables. Maximum is 2048 bytes.
 //*****************************************************************************************************************************//
 
 #define BLYNK_PRINT Serial
-
 #include <Adafruit_NeoPixel.h>
 #include <ESP8266WiFi.h>
 #include <ESP8266HTTPClient.h>
 #include <ArduinoJson.h>
 #include <BlynkSimpleEsp8266.h>
 
-char auth[] = "wcbPWzIFxP_SgWoQgSapkyh-UKsMaudT";   //Authentication ky for the Blynk app /Robert///29f716f65f2c4da59e006a0bb2a33440 /Chris///ab2d125aaa7440d58e7ef38e8f02a07f
-const char* KNOWN_SSID[] = {"Fam-Minheere 2.4GHz", "Fam D. Tuin", "Fam Donker", "Fam D. boven", "PowerMoto", "BlynkKar"}; //Put all Your WiFi Network Names
-const char* KNOWN_PASSWORD[] = {"Minheere@asus", "Donk1966", "Donk1966", "Donk1966", "Power12!!", "BlynkKar"}; //Put the WiFi Passwords in same order. For Open networks leave the password blank inside the double quotes.
+char auth[] = "####";   //Authentication ky for the Blynk app /Robert///29f716f65f2c4da59e006a0bb2a33440 /Chris///ab2d125aaa7440d58e7ef38e8f02a07f
+const char* KNOWN_SSID[] = {"##", "##", "##", "##", "##", "##"}; //Put all Your WiFi Network Names
+const char* KNOWN_PASSWORD[] = {"##", "##", "##", "##", "##", "##"}; //Put the WiFi Passwords in same order. For Open networks leave the password blank inside the double quotes.
 const int KNOWN_SSID_COUNT = sizeof(KNOWN_SSID) / sizeof(KNOWN_SSID[0]); // number of known networks
-
-
-
-
-
-
-//char json[] = "[{\"button\":\"test\",\"aantal\":1}]";
-//DynamicJsonDocument doc(1024);
-//deserializeJson(doc, json);
-
-
-
-
-
-
-
 
 
 #define LED_PIN D6
