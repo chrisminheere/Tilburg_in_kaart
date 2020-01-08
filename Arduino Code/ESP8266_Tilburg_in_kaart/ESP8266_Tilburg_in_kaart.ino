@@ -1,11 +1,12 @@
 //*****************************************************************************************************************************//
 //Made By: Chris Minheere & Robert Donker
 //Code written by: Chris Minheere
+//Data by: Robert Donker
 //
 //https://github.com/chrisminheere
-//8-11-2019
+//8-01-2020
 //Tilburg in kaart.
-//Hardware: Arduino Uno, Adafruit_NeoPixel strip.
+//Hardware: ESP8266, Adafruit_NeoPixel strip, 16-Channel 12-bit PWM Driver, i2C 16x2 LCD.
 
 //*****************************************************************************************************************************//
 
@@ -15,11 +16,33 @@
 #include <ESP8266HTTPClient.h>
 #include <ArduinoJson.h>
 #include <BlynkSimpleEsp8266.h>
+#include <Wire.h>
+#include <Wire.h>
+#include <Adafruit_PWMServoDriver.h>
+#include <LiquidCrystal_I2C.h> // Library for LCD
 
-char auth[] = "####";   //Authentication ky for the Blynk app /Robert///29f716f65f2c4da59e006a0bb2a33440 /Chris///ab2d125aaa7440d58e7ef38e8f02a07f
+LiquidCrystal_I2C lcd(0x27, 16, 2);
+Adafruit_PWMServoDriver pwm = Adafruit_PWMServoDriver();
+
+
+char auth[] = "##";   //Authentication ky for the Blynk app
 const char* KNOWN_SSID[] = {"##", "##", "##", "##", "##", "##"}; //Put all Your WiFi Network Names
 const char* KNOWN_PASSWORD[] = {"##", "##", "##", "##", "##", "##"}; //Put the WiFi Passwords in same order. For Open networks leave the password blank inside the double quotes.
 const int KNOWN_SSID_COUNT = sizeof(KNOWN_SSID) / sizeof(KNOWN_SSID[0]); // number of known networks
+
+const int buttonPin1 = D0;
+const int buttonPin2 = D3;
+const int buttonPin3 = D4;
+const int buttonPin4 = D5;
+const int buttonPin5 = D7;
+const int buttonPin6 = D8;
+
+int buttonState1 = 1;
+int buttonState2 = 1;
+int buttonState3 = 1;
+int buttonState4 = 1;
+int buttonState5 = 1;
+int buttonState6 = 1;
 
 
 #define LED_PIN D6
@@ -32,6 +55,13 @@ void setup() {
   int i, n;
 
   Serial.begin(9600);
+  pwm.begin();
+  lcd.begin();
+  lcd.backlight();
+
+  pwm.setOscillatorFrequency(27000000);
+  pwm.setPWMFreq(1600);
+  Wire.setClock(400000);
 
   // Set WiFi to station mode and disconnect from an AP if it was previously connected
   WiFi.mode(WIFI_STA);
@@ -60,6 +90,7 @@ void setup() {
       if (strcmp(KNOWN_SSID[n], WiFi.SSID(i).c_str())) {
         Serial.print(F("\tNot matching "));
         Serial.println(KNOWN_SSID[n]);
+
       } else { // we got a match
         wifiFound = true;
         break; // n is the network index we found
@@ -77,6 +108,11 @@ void setup() {
   const char* pass = (KNOWN_PASSWORD[n]);
   Serial.println(WiFi.localIP());
 
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("Connected to");
+  lcd.setCursor(0, 1);
+  lcd.print(KNOWN_SSID[n]);
 
   Serial.begin(9600); // opens serial port, sets data rate to 9600 bps
   Blynk.begin(auth, ssid, pass);
@@ -85,8 +121,9 @@ void setup() {
   strip.show(); // Initialize all pixels to 'off'
 
   Serial.println(" ");
-  Serial.println("Made By: Chris Minheere & Robert Donker      8-11-2019");
+  Serial.println("Made By: Chris Minheere & Robert Donker      8-11-2019 until 08-01-2020");
   Serial.println("Code written by: Chris Minheere");
+  Serial.println("Data by: Robert Donker");
   Serial.println("https://github.com/chrisminheere");
   Serial.println(" ");
   Serial.println(" ");
@@ -102,6 +139,19 @@ void setup() {
   Serial.println("_________________");
   Serial.println(" ");
   Serial.println(" ");
+
+  pinMode(buttonPin1, INPUT_PULLUP);
+  pinMode(buttonPin2, INPUT_PULLUP);
+  pinMode(buttonPin3, INPUT_PULLUP);
+  pinMode(buttonPin4, INPUT_PULLUP);
+  pinMode(buttonPin5, INPUT_PULLUP);
+  pinMode(buttonPin6, INPUT_PULLUP);
+
+  delay(3000);
+  lcd.clear();
+  lcd.print("Tilburg In Kaart");
+  lcd.setCursor(5, 1);
+  lcd.print("Ready");
 }
 
 void loop() {
@@ -112,187 +162,109 @@ void loop() {
     checkData();
   }
 
+  if (WiFi.status() == WL_CONNECTED) {
+  }//Check WiFi connection status
 
-
-
-
-
-
-
-
-
-  if (WiFi.status() == WL_CONNECTED) { //Check WiFi connection status
-    HTTPClient http; //Declare object of class HTTPClient
-
-
-    //    const size_t CAPACITY = JSON_OBJECT_SIZE(2);
-    //    StaticJsonDocument<CAPACITY> doc;
-    StaticJsonDocument<200> doc;
-    JsonArray array = doc.to<JsonArray>();
-    JsonObject nested = array.createNestedObject();
-    nested["button"] = "test";
-    nested["aantal"] = 1;
-    serializeJson(array, Serial);
-
-char JSONmessageBuffer[300];
-size_t serializeJsonPretty(const array& doc, String& output);
-    Serial.println(JSONmessageBuffer);
-
-    http.begin("https://api.powerbi.com/beta/9de629ec-ffcf-4793-b6d1-0cad7e8d74aa/datasets/a3e58707-f4f3-44ba-b106-6066a76ed38b/rows?tenant=9de629ec-ffcf-4793-b6d1-0cad7e8d74aa&UPN=RoDo%40finext.nl&key=A3CKElZcciICPkSt18fVq4cLbPxpDghCnlnkjxXGIfKVTJG%2BQ0W6tA4boe8hUF6dm66NAGv%2FhXYO5MV5QPWu9g%3D%3D"); //Specify request destination
-    http.addHeader("Content-Type", "application/json"); //Specify content-type header
-    int httpCode = http.POST(JSONmessageBuffer); //Send the request
-    String payload = http.getString();  //Get the response payload
-
-    Serial.println(httpCode); //Print HTTP return code
-    Serial.println(payload); //Print request response payload
-
-
-    http.end();  //Close connection
-  }
   else {
     Serial.println("Error in WiFi connection");
+    lcd.clear();
+    lcd.setCursor(5, 0);
+    lcd.print("Error");
+    lcd.setCursor(0, 0);
+    lcd.print("WiFi connection");
   }
-  delay(500);  //Send a request every 30 seconds
 
+  buttonState1 = digitalRead(buttonPin1);
+  buttonState2 = digitalRead(buttonPin2);
+  buttonState3 = digitalRead(buttonPin3);
+  buttonState4 = digitalRead(buttonPin4);
+  buttonState5 = digitalRead(buttonPin5);
+  buttonState6 = digitalRead(buttonPin6);
+  delay(100);
+
+  if (buttonState1 == LOW) {
+    dataSet0();
+  }
+  else if (buttonState2 == LOW) {
+    dataSet2();
+  }
+  else if (buttonState3 == LOW) {
+    dataSet5();
+  }
+  else if (buttonState4 == LOW) {
+    dataSet3();
+  }
+  else if (buttonState5 == LOW) {
+    dataSet1();
+  }
+  //  else if (buttonState6 == LOW) {
+  //    dataSet4();
+  //  }
 }
-
-
-
-
-
-
-
-
-
-
 
 void checkData() {
   if (input == 1) {
-    dataSet1();
-    Serial.println("---------------------");
-    Serial.println("CO2 (Koolstofdioxide)");
-    Serial.println("---------------------");
-    Serial.println(" ");
-    Serial.println(" ");
+    dataSet0();
   }
-
   else if (input == 2) {
-    dataSet2();
-    Serial.println("---------------------");
-    Serial.println("Gasverbruik per huishoudens");
-    Serial.println("---------------------");
-    Serial.println(" ");
-    Serial.println(" ");
+    dataSet1();
   }
-
   else if (input == 3) {
-    dataSet3();
-    Serial.println("---------------------");
-    Serial.println("Elektriciteitsverbruik per huishoudens");
-    Serial.println("---------------------");
-    Serial.println(" ");
-    Serial.println(" ");
+    dataSet2();
   }
-
   else if (input == 4) {
-    dataSet4();
-    Serial.println("---------------------");
-    Serial.println("Energielabel woningen");
-    Serial.println("---------------------");
-    Serial.println(" ");
-    Serial.println(" ");
+    dataSet3();
   }
-
   else if (input == 5) {
-    dataSet5();
-    Serial.println("---------------------");
-    Serial.println("Laadpalen Auto's");
-    Serial.println("---------------------");
-    Serial.println(" ");
-    Serial.println(" ");
+    dataSet4();
   }
-
   else if (input == 6) {
-    dataSet6();
-    Serial.println("---------------------");
-    Serial.println("Zonnestroom opgewekt");
-    Serial.println("---------------------");
-    Serial.println(" ");
-    Serial.println(" ");
+    dataSet5();
   }
-
-
   else if (input == 0) {
     eror();
   }
-
   else if (input == 9) {
     rainbow(20);
   }
-
   else {
     eror();
   }
+}
 
+BLYNK_WRITE(V4) {
+  dataSet0();
+}
+BLYNK_WRITE(V1) {
+  dataSet1();
+}
+BLYNK_WRITE(V0) {
+  dataSet2();
+}
+BLYNK_WRITE(V2) {
+  dataSet3();
+}
+BLYNK_WRITE(V5) {
+  dataSet4();
+}
+BLYNK_WRITE(V3) {
+  dataSet5();
 }
 
 
-BLYNK_WRITE(V4) {
-  dataSet1();
+void dataSet0() {
   Serial.println("---------------------");
   Serial.println("CO2 (Koolstofdioxide)");
   Serial.println("---------------------");
   Serial.println(" ");
   Serial.println(" ");
-}
 
-BLYNK_WRITE(V1) {
-  dataSet2();
-  Serial.println("---------------------");
-  Serial.println("Gasverbruik per huishoudens");
-  Serial.println("---------------------");
-  Serial.println(" ");
-  Serial.println(" ");
-}
+  lcd.clear();
+  lcd.setCursor(6, 0);
+  lcd.print("CO2 ");
+  lcd.setCursor(0, 1);
+  lcd.print("Koolstofdioxide");
 
-BLYNK_WRITE(V0) {
-  dataSet3();
-  Serial.println("---------------------");
-  Serial.println("Elektriciteitsverbruik per huishoudens");
-  Serial.println("---------------------");
-  Serial.println(" ");
-  Serial.println(" ");
-}
-
-BLYNK_WRITE(V2) {
-  dataSet4();
-  Serial.println("---------------------");
-  Serial.println("Energielabel woningen");
-  Serial.println("---------------------");
-  Serial.println(" ");
-  Serial.println(" ");
-}
-
-BLYNK_WRITE(V5) {
-  dataSet5();
-  Serial.println("---------------------");
-  Serial.println("Laadpalen Auto's");
-  Serial.println("---------------------");
-  Serial.println(" ");
-  Serial.println(" ");
-}
-
-BLYNK_WRITE(V3) {
-  dataSet6();
-  Serial.println("---------------------");
-  Serial.println("Zonnestroom opgewekt");
-  Serial.println("---------------------");
-  Serial.println(" ");
-  Serial.println(" ");
-}
-
-
-void dataSet1() {
   strip.setPixelColor(0, 0, 0, 255);
   strip.setPixelColor(1, 255, 0, 75);
   strip.setPixelColor(7, 245, 10, 0);
@@ -305,9 +277,26 @@ void dataSet1() {
   strip.setPixelColor(6, 213, 42, 0);
   strip.setPixelColor(3, 0, 255, 0);
   strip.show();
+
+  pwm.setPin(0, 4096);
+  pwm.setPin(1, 0);
+  pwm.setPin(2, 0);
+  pwm.setPin(3, 0);
+  pwm.setPin(4, 0);
+  pwm.setPin(5, 0);
 }
 
-void dataSet2() {
+void dataSet1() {
+  Serial.println("---------------------");
+  Serial.println("Gasverbruik");
+  Serial.println("---------------------");
+  Serial.println(" ");
+  Serial.println(" ");
+
+  lcd.clear();
+  lcd.setCursor(2, 0);
+  lcd.print("Gasverbruik");
+
   strip.setPixelColor(0, 128, 255, 0);
   strip.setPixelColor(1, 0, 0, 0);
   strip.setPixelColor(2, 255, 0, 75);
@@ -320,9 +309,27 @@ void dataSet2() {
   strip.setPixelColor(6, 107, 148, 0);
   strip.setPixelColor(3, 0, 255, 0);
   strip.show();
+  pwm.setPin(0, 0);
+  pwm.setPin(1, 4096);
+  pwm.setPin(2, 0);
+  pwm.setPin(3, 0);
+  pwm.setPin(4, 0);
+  pwm.setPin(5, 0);
 }
 
-void dataSet3() {
+void dataSet2() {
+  Serial.println("---------------------");
+  Serial.println("Elektriciteitsverbruik");
+  Serial.println("---------------------");
+  Serial.println(" ");
+  Serial.println(" ");
+
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("Elektriciteits-");
+  lcd.setCursor(0, 1);
+  lcd.print("-verbruik");
+
   strip.setPixelColor(0, 0, 255, 0);
   strip.setPixelColor(10, 145, 110, 0);
   strip.setPixelColor(8, 255, 0, 50);
@@ -335,9 +342,27 @@ void dataSet3() {
   strip.setPixelColor(2, 186, 69, 0);
   strip.setPixelColor(6, 49, 206, 0);
   strip.show();
+  pwm.setPin(0, 0);
+  pwm.setPin(1, 0);
+  pwm.setPin(2, 4096);
+  pwm.setPin(3, 0);
+  pwm.setPin(4, 0);
+  pwm.setPin(5, 0);
 }
 
-void dataSet4() {
+void dataSet3() {
+  Serial.println("---------------------");
+  Serial.println("Energielabel woningen");
+  Serial.println("---------------------");
+  Serial.println(" ");
+  Serial.println(" ");
+
+  lcd.clear();
+  lcd.setCursor(2, 0);
+  lcd.print("Energielabel");
+  lcd.setCursor(4, 1);
+  lcd.print("woningen");
+
   strip.setPixelColor(0, 200, 255, 0);
   strip.setPixelColor(1, 255, 0, 75);
   strip.setPixelColor(3, 163, 92, 0);
@@ -350,9 +375,27 @@ void dataSet4() {
   strip.setPixelColor(4, 67, 188, 0);
   strip.setPixelColor(6, 0, 255, 0);
   strip.show();
+  pwm.setPin(0, 0);
+  pwm.setPin(1, 0);
+  pwm.setPin(2, 0);
+  pwm.setPin(3, 4096);
+  pwm.setPin(4, 0);
+  pwm.setPin(5, 0);
 }
 
-void dataSet5() {
+void dataSet4() {
+  Serial.println("---------------------");
+  Serial.println("Laadpalen Auto's");
+  Serial.println("---------------------");
+  Serial.println(" ");
+  Serial.println(" ");
+
+  lcd.clear();
+  lcd.setCursor(3, 0);
+  lcd.print("Laadpalen");
+  lcd.setCursor(5, 1);
+  lcd.print("Auto's");
+
   strip.setPixelColor(0, 0, 255, 255);
   strip.setPixelColor(10, 0, 255, 0);
   strip.setPixelColor(1, 3, 252, 0);
@@ -365,9 +408,27 @@ void dataSet5() {
   strip.setPixelColor(6, 90, 165, 0);
   strip.setPixelColor(3, 255, 0, 75);
   strip.show();
+  pwm.setPin(0, 0);
+  pwm.setPin(1, 0);
+  pwm.setPin(2, 0);
+  pwm.setPin(3, 0);
+  pwm.setPin(4, 4096);
+  pwm.setPin(5, 0);
 }
 
-void dataSet6() {
+void dataSet5() {
+  Serial.println("---------------------");
+  Serial.println("Zonnestroom opgewekt");
+  Serial.println("---------------------");
+  Serial.println(" ");
+  Serial.println(" ");
+
+  lcd.clear();
+  lcd.setCursor(2, 0);
+  lcd.print("Zonnestroom");
+  lcd.setCursor(4, 1);
+  lcd.print("Opgewekt");
+
   strip.setPixelColor(0, 255, 0, 0);
   strip.setPixelColor(8, 0, 255, 0);
   strip.setPixelColor(7, 7, 248, 0);
@@ -380,33 +441,50 @@ void dataSet6() {
   strip.setPixelColor(10, 160, 95, 0);
   strip.setPixelColor(3, 255, 0, 75);
   strip.show();
+  pwm.setPin(0, 0);
+  pwm.setPin(1, 0);
+  pwm.setPin(2, 0);
+  pwm.setPin(3, 0);
+  pwm.setPin(4, 0);
+  pwm.setPin(5, 4096);
 }
 
 
-
-
-
-
 void eror() {
-  for (int j = 0; j <= 10; j++) {
+  lcd.clear();
+  lcd.setCursor(6, 0);
+  lcd.print("ERROR");
 
-    for (int i = 0; i <= 9; i++) {
+  for (int i = 0; i <= 5; i++) {
+    pwm.setPin(i, 0);
+  }
+
+  for (int j = 0; j <= 10; j++) {
+    for (int i = 0; i <= 11; i++) {
       strip.setPixelColor(i, 0, 255, 0);
     }
     strip.show();
     delay(70);
-    for (int i = 0; i <= 9; i++) {
+    for (int i = 0; i <= 11; i++) {
       strip.setPixelColor(i, 0, 0, 0);
     }
     strip.show();
     delay(70);
   }
+  lcd.clear();
+  lcd.print("Tilburg In Kaart");
+  lcd.setCursor(5, 1);
+  lcd.print("Ready");
 }
 
 
 
 // Rainbow cycle along whole strip. Pass delay time (in ms) between frames.
 void rainbow(int wait) {
+
+  for (int i = 0; i <= 5; i++) {
+    pwm.setPin(i, 0);
+  }
   for (long firstPixelHue = 0; firstPixelHue < 1 * 65536; firstPixelHue += 256) {
     for (int i = 0; i < strip.numPixels(); i++) {
       int pixelHue = firstPixelHue + (i * 65536L / strip.numPixels());
